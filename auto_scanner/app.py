@@ -1,19 +1,30 @@
-import requests
+import getpass
+from time import sleep
+from typing import List
+from random import randint
 
-def scan_websites() -> int:
-    s = requests.Session()
-    s.headers.update({
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'
-    })
-    #r = requests.get('https://www.nettiauto.com/mercedes-benz/sprinter?pto=4000&id_country[]=73')
-    r = s.get('https://www.nettiauto.com', verify=False, allow_redirects=True)
-    with open('file.html', 'w') as file:
-        file.write(r.text)
-    print(r)
-    print(r.headers)
-    print(r.status_code)
-    return 1
+from auto_scanner.netti_auto import NettiAuto, NettiAutoError
+from auto_scanner.email import send_email
+
+NETTI_AUTO = NettiAuto()
+
+
+def scrape_netti_auto() -> List[str]:
+    try:
+        return NETTI_AUTO.get_notifications()
+    except NettiAutoError as e:
+        print(e)
+        return []
+
+
+def scan_websites(passwd: str) -> None:
+    while True:
+        notifications = scrape_netti_auto()
+        if notifications:
+            send_email(passwd, notifications)
+        sleep(randint(60, 5*60))
 
 
 if __name__ == '__main__':
-    scan_websites()
+    passwd = getpass.getpass('Your email password: ')
+    scan_websites(passwd)
